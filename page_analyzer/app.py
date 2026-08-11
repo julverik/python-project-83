@@ -59,7 +59,8 @@ def add_url():
 
     if not is_valid:
         flash(error_message, 'error')
-        return redirect(url_for('index'))
+        messages = get_flashed_messages(with_categories=True)
+        return render_template('index.html', messages=messages), 422
 
     normalized_url = validate.normalize_url(raw_url)
 
