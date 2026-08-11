@@ -23,16 +23,13 @@ def validate_url(url):
 
 
 def normalize_url(url):
-    """Нормализует URL: удаляет trailing slash и приводит к нижнему регистру"""
+    """Нормализует URL"""
     if not url:
         return url
-    
+
     url = url.strip()
-    
-    if url.endswith('/'):
-        url = url[:-1]
-    
+
     parsed = urlparse(url)
-    normalized = f"{parsed.scheme}://{parsed.netloc.lower()}{parsed.path}"
-    
+    normalized = f"{parsed.scheme}://{parsed.netloc.lower()}"
+
     return normalized

@@ -63,7 +63,6 @@ def add_url():
 
     normalized_url = validate.normalize_url(raw_url)
 
-    # Проверяем, существует ли уже такой URL
     existing_url = db.get_url_by_name(normalized_url)
     if existing_url:
         flash('Страница уже существует', 'info')
