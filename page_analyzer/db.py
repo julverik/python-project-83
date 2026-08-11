@@ -1,10 +1,13 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
+
 from .config import Config
+
 
 def get_connection():
     """Подключение к базе данных"""
     return psycopg2.connect(Config.DATABASE_URL)
+
 
 def get_urls():
     """Получить все URL с датой последней проверки и кодом ответа"""
@@ -24,12 +27,14 @@ def get_urls():
             """)
             return cur.fetchall()
 
+
 def get_url(url_id):
     """Получить URL по ID"""
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute('SELECT * FROM urls WHERE id = %s', (url_id,))
             return cur.fetchone()
+
 
 def add_url(name):
     """Добавить URL в базу, если его нет"""
@@ -50,6 +55,7 @@ def add_url(name):
                 cur.execute('SELECT id FROM urls WHERE name = %s', (name,))
                 return cur.fetchone()[0]
 
+
 def get_checks(url_id):
     """Получить все проверки для URL"""
     with get_connection() as conn:
@@ -59,6 +65,7 @@ def get_checks(url_id):
                 (url_id,)
             )
             return cur.fetchall()
+
 
 def add_check(url_id, status_code, h1=None, title=None, description=None):
     """Добавить новую проверку с SEO-данными"""

@@ -1,5 +1,7 @@
 from urllib.parse import urlparse
+
 import validators
+
 
 def validate_url(url):
     """Проверяет URL на корректность."""
@@ -18,6 +20,7 @@ def validate_url(url):
         return False, 'Некорректный формат URL'
     
     return True, None
+
 
 def normalize_url(url):
     """Нормализует URL: удаляет trailing slash и приводит к нижнему регистру"""

@@ -1,9 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, get_flashed_messages
-from .config import Config
-from . import db
-from . import validate
 import requests
 from bs4 import BeautifulSoup
+from flask import (
+    Flask,
+    flash,
+    get_flashed_messages,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+
+from . import db, validate
+from .config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -34,7 +42,12 @@ def url_detail(url_id):
     
     checks = db.get_checks(url_id)
     messages = get_flashed_messages(with_categories=True)
-    return render_template('url.html', url=url, checks=checks, messages=messages)
+    return render_template(
+    'url.html',
+    url=url,
+    checks=checks,
+    messages=messages
+)
 
 
 @app.route('/urls', methods=['POST'])
