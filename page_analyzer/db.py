@@ -14,15 +14,15 @@ def get_urls():
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                SELECT 
+                SELECT
                     urls.*,
-                    (SELECT created_at FROM url_checks 
-                     WHERE url_id = urls.id 
+                    (SELECT created_at FROM url_checks
+                     WHERE url_id = urls.id
                      ORDER BY id DESC LIMIT 1) as last_check_at,
-                    (SELECT status_code FROM url_checks 
-                     WHERE url_id = urls.id 
+                    (SELECT status_code FROM url_checks
+                     WHERE url_id = urls.id
                      ORDER BY id DESC LIMIT 1) as last_status_code
-                FROM urls 
+                FROM urls
                 ORDER BY urls.id DESC
             """)
             return cur.fetchall()
@@ -36,11 +36,19 @@ def get_url(url_id):
             return cur.fetchone()
 
 
+def get_url_by_name(name):
+    """Получить URL по имени"""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute('SELECT * FROM urls WHERE name = %s', (name,))
+            return cur.fetchone()
+
+
 def add_url(name):
     """Добавить URL в базу, если его нет"""
     if name.endswith('/'):
         name = name[:-1]
-    
+
     with get_connection() as conn:
         with conn.cursor() as cur:
             try:
@@ -72,9 +80,9 @@ def add_check(url_id, status_code, h1=None, title=None, description=None):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """INSERT INTO url_checks 
-                   (url_id, status_code, h1, title, description) 
-                   VALUES (%s, %s, %s, %s, %s) 
+                """INSERT INTO url_checks
+                   (url_id, status_code, h1, title, description)
+                   VALUES (%s, %s, %s, %s, %s)
                    RETURNING id""",
                 (url_id, status_code, h1, title, description)
             )

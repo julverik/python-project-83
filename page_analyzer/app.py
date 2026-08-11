@@ -39,30 +39,36 @@ def url_detail(url_id):
     if not url:
         flash('Страница не найдена', 'error')
         return redirect(url_for('urls_list'))
-    
+
     checks = db.get_checks(url_id)
     messages = get_flashed_messages(with_categories=True)
     return render_template(
-    'url.html',
-    url=url,
-    checks=checks,
-    messages=messages
-)
+        'url.html',
+        url=url,
+        checks=checks,
+        messages=messages
+    )
 
 
 @app.route('/urls', methods=['POST'])
 def add_url():
     """Добавление нового URL"""
     raw_url = request.form.get('url', '').strip()
-    
+
     is_valid, error_message = validate.validate_url(raw_url)
-    
+
     if not is_valid:
         flash(error_message, 'error')
         return redirect(url_for('index'))
-    
+
     normalized_url = validate.normalize_url(raw_url)
-    
+
+    # Проверяем, существует ли уже такой URL
+    existing_url = db.get_url_by_name(normalized_url)
+    if existing_url:
+        flash('Страница уже существует', 'info')
+        return redirect(url_for('url_detail', url_id=existing_url['id']))
+
     try:
         url_id = db.add_url(normalized_url)
         flash('Страница успешно добавлена', 'success')
@@ -79,27 +85,27 @@ def check_url(url_id):
     if not url:
         flash('Страница не найдена', 'error')
         return redirect(url_for('urls_list'))
-    
+
     try:
         response = requests.get(url['name'], timeout=5)
         response.raise_for_status()
-        
+
         soup = BeautifulSoup(response.text, 'html.parser')
-        
+
         h1_tag = soup.find('h1')
         h1 = h1_tag.get_text(strip=True) if h1_tag else None
-        
+
         title_tag = soup.find('title')
         title = title_tag.get_text(strip=True) if title_tag else None
-        
+
         desc_tag = soup.find('meta', attrs={'name': 'description'})
         description = desc_tag.get('content', '').strip() if desc_tag else None
-        
+
         def truncate(text, limit=200):
             if text and len(text) > limit:
                 return text[:limit] + '...'
             return text
-        
+
         db.add_check(
             url_id,
             status_code=response.status_code,
@@ -107,12 +113,12 @@ def check_url(url_id):
             title=truncate(title),
             description=truncate(description)
         )
-        
+
         flash('Страница успешно проверена', 'success')
-        
+
     except requests.RequestException:
         flash('Произошла ошибка при проверке', 'error')
     except Exception:
         flash('Произошла ошибка при проверке', 'error')
-    
+
     return redirect(url_for('url_detail', url_id=url_id))
