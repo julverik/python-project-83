@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, get
 from .config import Config
 from . import db
 from . import validate
+import requests
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -66,9 +67,10 @@ def check_url(url_id):
         return redirect(url_for('urls_list'))
     
     try:
-        db.add_check(url_id)
+        response = requests.get(url['name'], timeout=5)
+        db.add_check(url_id, response.status_code)
         flash('Страница успешно проверена', 'success')
-    except Exception:
+    except (requests.RequestException, requests.ConnectionError, requests.Timeout):
         flash('Произошла ошибка при проверке', 'error')
     
     return redirect(url_for('url_detail', url_id=url_id))

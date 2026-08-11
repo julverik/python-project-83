@@ -7,7 +7,7 @@ def get_connection():
     return psycopg2.connect(Config.DATABASE_URL)
 
 def get_urls():
-    """Получить все URL с датой последней проверки"""
+    """Получить все URL с датой последней проверки и кодом ответа"""
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
@@ -15,7 +15,10 @@ def get_urls():
                     urls.*,
                     (SELECT created_at FROM url_checks 
                      WHERE url_id = urls.id 
-                     ORDER BY id DESC LIMIT 1) as last_check_at
+                     ORDER BY id DESC LIMIT 1) as last_check_at,
+                    (SELECT status_code FROM url_checks 
+                     WHERE url_id = urls.id 
+                     ORDER BY id DESC LIMIT 1) as last_status_code
                 FROM urls 
                 ORDER BY urls.id DESC
             """)
@@ -57,13 +60,13 @@ def get_checks(url_id):
             )
             return cur.fetchall()
 
-def add_check(url_id):
-    """Добавить новую проверку для URL"""
+def add_check(url_id, status_code):
+    """Добавить новую проверку с кодом ответа"""
     with get_connection() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute(
-                'INSERT INTO url_checks (url_id) VALUES (%s) RETURNING id',
-                (url_id,)
+                'INSERT INTO url_checks (url_id, status_code) VALUES (%s, %s) RETURNING id',
+                (url_id, status_code)
             )
             conn.commit()
-            return cur.fetchone()['id']
+            return cur.fetchone()[0]
