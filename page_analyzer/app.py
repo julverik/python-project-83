@@ -29,8 +29,10 @@ def url_detail(url_id):
     if not url:
         flash('Страница не найдена', 'error')
         return redirect(url_for('urls_list'))
+    
+    checks = db.get_checks(url_id)
     messages = get_flashed_messages(with_categories=True)
-    return render_template('url.html', url=url, messages=messages)
+    return render_template('url.html', url=url, checks=checks, messages=messages)
 
 
 @app.route('/urls', methods=['POST'])
@@ -53,3 +55,20 @@ def add_url():
     except Exception:
         flash('Ошибка при добавлении URL', 'error')
         return redirect(url_for('index'))
+
+
+@app.route('/urls/<int:url_id>/checks', methods=['POST'])
+def check_url(url_id):
+    """Запустить проверку URL"""
+    url = db.get_url(url_id)
+    if not url:
+        flash('Страница не найдена', 'error')
+        return redirect(url_for('urls_list'))
+    
+    try:
+        db.add_check(url_id)
+        flash('Страница успешно проверена', 'success')
+    except Exception:
+        flash('Произошла ошибка при проверке', 'error')
+    
+    return redirect(url_for('url_detail', url_id=url_id))

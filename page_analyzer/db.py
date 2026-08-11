@@ -7,10 +7,18 @@ def get_connection():
     return psycopg2.connect(Config.DATABASE_URL)
 
 def get_urls():
-    """Получить все URL, сортировка по убыванию ID (новые первыми)"""
+    """Получить все URL с датой последней проверки"""
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute('SELECT * FROM urls ORDER BY id DESC')
+            cur.execute("""
+                SELECT 
+                    urls.*,
+                    (SELECT created_at FROM url_checks 
+                     WHERE url_id = urls.id 
+                     ORDER BY id DESC LIMIT 1) as last_check_at
+                FROM urls 
+                ORDER BY urls.id DESC
+            """)
             return cur.fetchall()
 
 def get_url(url_id):
@@ -38,3 +46,24 @@ def add_url(name):
                 conn.rollback()
                 cur.execute('SELECT id FROM urls WHERE name = %s', (name,))
                 return cur.fetchone()[0]
+
+def get_checks(url_id):
+    """Получить все проверки для URL"""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                'SELECT * FROM url_checks WHERE url_id = %s ORDER BY id DESC',
+                (url_id,)
+            )
+            return cur.fetchall()
+
+def add_check(url_id):
+    """Добавить новую проверку для URL"""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                'INSERT INTO url_checks (url_id) VALUES (%s) RETURNING id',
+                (url_id,)
+            )
+            conn.commit()
+            return cur.fetchone()['id']
