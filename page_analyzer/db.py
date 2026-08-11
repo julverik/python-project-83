@@ -60,13 +60,16 @@ def get_checks(url_id):
             )
             return cur.fetchall()
 
-def add_check(url_id, status_code):
-    """Добавить новую проверку с кодом ответа"""
+def add_check(url_id, status_code, h1=None, title=None, description=None):
+    """Добавить новую проверку с SEO-данными"""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                'INSERT INTO url_checks (url_id, status_code) VALUES (%s, %s) RETURNING id',
-                (url_id, status_code)
+                """INSERT INTO url_checks 
+                   (url_id, status_code, h1, title, description) 
+                   VALUES (%s, %s, %s, %s, %s) 
+                   RETURNING id""",
+                (url_id, status_code, h1, title, description)
             )
             conn.commit()
             return cur.fetchone()[0]

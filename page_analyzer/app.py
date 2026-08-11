@@ -3,6 +3,7 @@ from .config import Config
 from . import db
 from . import validate
 import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -68,9 +69,37 @@ def check_url(url_id):
     
     try:
         response = requests.get(url['name'], timeout=5)
-        db.add_check(url_id, response.status_code)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        h1_tag = soup.find('h1')
+        h1 = h1_tag.get_text(strip=True) if h1_tag else None
+        
+        title_tag = soup.find('title')
+        title = title_tag.get_text(strip=True) if title_tag else None
+        
+        desc_tag = soup.find('meta', attrs={'name': 'description'})
+        description = desc_tag.get('content', '').strip() if desc_tag else None
+        
+        def truncate(text, limit=200):
+            if text and len(text) > limit:
+                return text[:limit] + '...'
+            return text
+        
+        db.add_check(
+            url_id,
+            status_code=response.status_code,
+            h1=truncate(h1),
+            title=truncate(title),
+            description=truncate(description)
+        )
+        
         flash('Страница успешно проверена', 'success')
-    except (requests.RequestException, requests.ConnectionError, requests.Timeout):
+        
+    except requests.RequestException:
+        flash('Произошла ошибка при проверке', 'error')
+    except Exception:
         flash('Произошла ошибка при проверке', 'error')
     
     return redirect(url_for('url_detail', url_id=url_id))
