@@ -1,8 +1,9 @@
-from flask import Flask
+from flask import Flask, render_template
 
 app = Flask(__name__)
 
 
 @app.route('/')
 def index():
-    return '<h1>Page Analyzer</h1><p>SEO analysis tool</p>'
+    """Главная страница"""
+    return render_template('index.html')
