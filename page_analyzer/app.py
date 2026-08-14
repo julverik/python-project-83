@@ -1,5 +1,4 @@
 import requests
-from bs4 import BeautifulSoup
 from flask import (
     Flask,
     flash,
@@ -10,7 +9,7 @@ from flask import (
     url_for,
 )
 
-from . import db, validate
+from . import db, parser, validate
 from .config import Config
 
 app = Flask(__name__)
@@ -90,28 +89,14 @@ def check_url(url_id):
         response = requests.get(url['name'], timeout=5)
         response.raise_for_status()
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        h1_tag = soup.find('h1')
-        h1 = h1_tag.get_text(strip=True) if h1_tag else None
-
-        title_tag = soup.find('title')
-        title = title_tag.get_text(strip=True) if title_tag else None
-
-        desc_tag = soup.find('meta', attrs={'name': 'description'})
-        description = desc_tag.get('content', '').strip() if desc_tag else None
-
-        def truncate(text, limit=200):
-            if text and len(text) > limit:
-                return text[:limit] + '...'
-            return text
+        seo_data = parser.parse_html(response.text)
 
         db.add_check(
             url_id,
             status_code=response.status_code,
-            h1=truncate(h1),
-            title=truncate(title),
-            description=truncate(description)
+            h1=seo_data['h1'],
+            title=seo_data['title'],
+            description=seo_data['description']
         )
 
         flash('Страница успешно проверена', 'success')
